@@ -22,7 +22,7 @@ def consume_api(api_url: str, data: list):
 
 # read questions from csv and format them to be consumed by API
 def read_from_csv(csv_file_name: str = 'h_market_latest.csv'):
-    with open(f"/raw/{csv_file_name}", 'r', encoding='utf-8', newline='') as q_file:
+    with open(f"raw/{csv_file_name}", 'r', encoding='utf-8', newline='') as q_file:
         # use csv reader function to read from csv file
         questions_data = []
         dataset = reader(q_file)
@@ -54,7 +54,7 @@ def save_to_json(data: list, filename: str = 'questions'):
 
 def read_from_json(filename: str = 'questions'):
     data = []
-    with open(f"{filename}.json", "r") as json_file:
+    with open(f"data/{filename}.json", "r") as json_file:
         json_object = json.load(json_file)
 
         for q in json_object['data']:
@@ -84,22 +84,33 @@ def process_batch(url: str, data: list, batch_size: int):
                   f"{processed_questions} Had Been Processed Successfully.")
             save_to_json(data)
             break
+        finally:
+            print("Updating json file.")
+            save_to_json(data)
+
     print(f"Completed uploading. {processed_questions} Processed Successfully.")
 
 
 if __name__ == "__main__":
     url = 'http://localhost:8888/api/json-ep'
-    # read scrapped data from csv file
-    csv_data = read_from_csv()
-    # format/prepare the data into a json file (api friendly data format)
-    save_to_json(csv_data)
     # read all data from the json file
     json_data = read_from_json()
+
+    if len(json_data) == 0:
+        print(f"There are no unprocessed questions. Checking from the csv file...")
+        # read scrapped data from csv file
+        csv_data = read_from_csv()
+        # format/prepare the data into a json file (api friendly data format)
+        save_to_json(csv_data)
+
+        json_data = read_from_json()
+
+    print(f"Found {len(json_data)} questions. Processing...\n")
     # prepare it in batches of 20 items
     batch_size = 20
     process_batch(url, json_data, batch_size)
 
-    print(f"Nothing to process! Processed Successfully.")
+    print(f"Nothing to process!\n\nProgram Done.")
     exit()
 
     # once all items are processed, delete the json file and update the record for processed csv files
