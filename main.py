@@ -27,12 +27,29 @@ def read_from_csv(csv_file_name: str = 'h_market_latest.csv'):
         questions_data = []
         dataset = reader(q_file)
 
+        #track title
+        title_counts = {}
+
         for row in dataset:
+            original_title = row[0].strip()
+            tag = row[3] or row[4].strip()
+            category = row[2].strip()
+
+            # check if title is in the title_counts
+            if original_title in title_counts:
+                # catch duplicate and update title
+                title_counts[original_title] += 1
+                new_title = f"{original_title}: {category} {title_counts[original_title]}"
+            else:
+                # if not a duplicate add it to title_counts for tracking
+                title_counts[original_title] = 1
+                new_title = original_title
+
             question = {
-                'title': row[0].strip(),
+                'title': new_title,
                 'body': row[1].strip(),
-                'category': row[2].strip(),
-                'tag': row[3].strip() or row[4].strip(),
+                'category': category,
+                'tag': tag,
             }
             questions_data.append(question)
 
@@ -75,20 +92,34 @@ def process_batch(url: str, data: list, batch_size: int):
 
         try:
             response_data = consume_api(url, batch)
+            # check if response was successful
+            try:
+                if not response_data['success']:
+                    print(f"\nAn error occurred while processing the files.\n"
+                          f"message: {response_data['message']}\n")
+                    print(response_data)
+                    exit()
+            except TypeError as te:
+                print(te)
+                exit()
+
             processed_questions += len(batch)
 
-            print(f"Processed {processed_questions}. Processing next batch...")
-            print(response_data)
-        except requests.exceptions.ConnectionError as ce:
-            print(f"Connection Error: {ce}")
-            print(f"A connection error occurred while processing data."
-                  f"{processed_questions} Had Been Processed Successfully.")
-            break
-        finally:
-            print("Updating json file.")
+            print("\nUpdating json file.")
             save_to_json(data)
 
-    print(f"Completed uploading. {processed_questions} Processed Successfully.")
+            print(f"Processed {processed_questions}. Processing next batch...\n")
+            print(response_data)
+        except requests.exceptions.ConnectionError as ce:
+            print(f"\n\nConnection Error: {ce}")
+
+            print(f"A connection error occurred while processing data."
+                  f"{processed_questions} Had Been Processed Successfully.\n\n")
+            print("\nUpdating json file.")
+            save_to_json(data)
+            exit()
+
+    print(f"\n\nCompleted uploading. {processed_questions} Processed Successfully.")
 
 
 if __name__ == "__main__":
@@ -101,7 +132,8 @@ if __name__ == "__main__":
         csv_file_name = input(f"Enter the name of the file to be processed: e.g, 'h_market_latest.csv'."
                               f"\n\nTHE FILE MUST BE IN THE 'raw' FOLDER..."
                               f"\n You should enter the file name in the following format: -> 'filename.csv' or "
-                              f"'data_to_upload.csv'\n\n Leave blank to use the default file name 'h_market_latest.csv'")
+                              f"'data_to_upload.csv'\n\n"
+                              f"Leave blank to use the default file name 'h_market_latest.csv': ")
         if not csv_file_name:
             csv_file_name = 'h_market_latest.csv'
         # read scrapped data from csv file
