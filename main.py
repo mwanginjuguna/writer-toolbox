@@ -76,13 +76,13 @@ def process_batch(url: str, data: list, batch_size: int):
         try:
             response_data = consume_api(url, batch)
             processed_questions += len(batch)
+
             print(f"Processed {processed_questions}. Processing next batch...")
             print(response_data)
         except requests.exceptions.ConnectionError as ce:
             print(f"Connection Error: {ce}")
             print(f"A connection error occurred while processing data."
                   f"{processed_questions} Had Been Processed Successfully.")
-            save_to_json(data)
             break
         finally:
             print("Updating json file.")
@@ -97,9 +97,21 @@ if __name__ == "__main__":
     json_data = read_from_json()
 
     if len(json_data) == 0:
-        print(f"There are no unprocessed questions. Checking from the csv file...")
+        print(f"There are no unprocessed questions. Enter a new csv file to process...\n")
+        csv_file_name = input(f"Enter the name of the file to be processed: e.g, 'h_market_latest.csv'."
+                              f"\n\nTHE FILE MUST BE IN THE 'raw' FOLDER..."
+                              f"\n You should enter the file name in the following format: -> 'filename.csv' or "
+                              f"'data_to_upload.csv'\n\n Leave blank to use the default file name 'h_market_latest.csv'")
+        if not csv_file_name:
+            csv_file_name = 'h_market_latest.csv'
         # read scrapped data from csv file
-        csv_data = read_from_csv()
+        try:
+            csv_data = read_from_csv(csv_file_name)
+        except FileNotFoundError as err:
+            print("The file you entered does not exist!!\n"
+                  "Ensure the name is correct and the file exists in the 'raw' folder and try again!")
+            exit()
+
         # format/prepare the data into a json file (api friendly data format)
         save_to_json(csv_data)
 
