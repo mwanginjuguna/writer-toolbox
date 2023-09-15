@@ -1,3 +1,5 @@
+import os
+
 import requests
 from csv import reader
 import json
@@ -7,7 +9,7 @@ def consume_api(api_url: str, data: list):
     response = requests.post(api_url, json=data)
 
     if response.status_code == 200:
-        print(response.text)
+
         try:
             res_data = response.json()
             return res_data
@@ -39,11 +41,11 @@ def read_from_csv(csv_file_name: str = 'h_market_latest.csv'):
             if original_title in title_counts:
                 # catch duplicate and update title
                 title_counts[original_title] += 1
-                new_title = f"{original_title}: {category} {title_counts[original_title]}"
+                new_title = f"{original_title}: {category} - {tag} {title_counts[original_title]}"
             else:
                 # if not a duplicate add it to title_counts for tracking
                 title_counts[original_title] = 1
-                new_title = original_title
+                new_title = f"{original_title} - {tag}"
 
             question = {
                 'title': new_title,
@@ -83,33 +85,37 @@ def read_from_json(filename: str = 'questions'):
 def process_batch(url: str, data: list, batch_size: int):
     processed_questions = 0
 
-    while data:
+    while data and len(data)> 0:
         if len(data) < batch_size:
             batch = data
+            data = []
         else:
             batch = data[:batch_size]
             data = data[batch_size:]
 
         try:
+            print(f"current batch: {len(batch)}")
             response_data = consume_api(url, batch)
             # check if response was successful
-            try:
-                if not response_data['success']:
-                    print(f"\nAn error occurred while processing the files.\n"
-                          f"message: {response_data['message']}\n")
-                    print(response_data)
-                    exit()
-            except TypeError as te:
-                print(te)
+            if not response_data['statusCode'] == 201:
+                print(f"\nAn error occurred while processing the files.\n"
+                      f"message: {response_data['message']}\n")
+                print(response_data)
                 exit()
 
             processed_questions += len(batch)
-
-            print("\nUpdating json file.")
-            save_to_json(data)
+            try:
+                print(f"\nUpdating json file with {len(data)} unprocessed.")
+                save_to_json(data)
+                print("\nUpdated json file.")
+            except Exception as e:
+                print("Error while trying to update json: \n")
+                print(e)
 
             print(f"Processed {processed_questions}. Processing next batch...\n")
             print(response_data)
+            batch = []
+
         except requests.exceptions.ConnectionError as ce:
             print(f"\n\nConnection Error: {ce}")
 
@@ -150,10 +156,9 @@ if __name__ == "__main__":
         json_data = read_from_json()
 
     print(f"Found {len(json_data)} questions. Processing...\n")
-    # prepare it in batches of 20 items
+    # prepare it in batches of 50 items
     batch_size = 20
     process_batch(url, json_data, batch_size)
-
     print(f"Nothing to process!\n\nProgram Done.")
     exit()
 
