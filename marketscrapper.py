@@ -29,7 +29,7 @@ def manual_links(links: list):
     json_object = json.dumps(json_links, indent=4)
 
     # write to JSON file
-    with open("/links/links.json", "w") as json_file:
+    with open("links/links.json", "w") as json_file:
         json_file.write(json_object)
 
     return f"{len(links)} Links saved on links.json file"
@@ -38,7 +38,7 @@ def manual_links(links: list):
 def link_getter():
     links = []
     try:
-        with open("/links/links.json", "r") as json_file:
+        with open("links/links.json", "r") as json_file:
             json_object = json.load(json_file)
             for x in json_object["link_list"]:
                 links.append(x)
@@ -120,7 +120,7 @@ def question_scrapper(question_url: str):
 
 
 def save_question_to_csv(question_data):
-    csv_file_name = f'/raw/h_market_latest.csv'
+    csv_file_name = f'raw/h_market_latest.csv'
     with open(csv_file_name, 'a', encoding='utf-8', newline='') as q_file:
         # use csv writer function to write to file
         the_writer = writer(q_file)

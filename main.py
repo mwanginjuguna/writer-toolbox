@@ -31,6 +31,7 @@ def read_from_csv(csv_file_name: str = 'h_market_latest.csv'):
 
         #track title
         title_counts = {}
+        counter = 1
 
         for row in dataset:
             original_title = row[0].strip()
@@ -41,7 +42,8 @@ def read_from_csv(csv_file_name: str = 'h_market_latest.csv'):
             if original_title in title_counts:
                 # catch duplicate and update title
                 title_counts[original_title] += 1
-                new_title = f"{original_title}: {category} - {tag} {title_counts[original_title]}"
+                counter += 1
+                new_title = f"{original_title}: {category} - {tag} {title_counts[original_title]} {counter}"
             else:
                 # if not a duplicate add it to title_counts for tracking
                 title_counts[original_title] = 1
@@ -129,7 +131,7 @@ def process_batch(url: str, data: list, batch_size: int):
 
 
 if __name__ == "__main__":
-    url = 'http://localhost:8888/api/json-ep'
+    url = 'https://writeessayscheap.org/api/json-ep'
     # read all data from the json file
     json_data = read_from_json()
 
