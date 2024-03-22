@@ -54,6 +54,7 @@ def page_scrapper(page_url):
     try:
         # Connect to server and download the page
         page_results = requests.get(page_url)
+        print("Page downloaded!")
         # get url extension for each question from all the 'containers' parses received html response from
         # server into a soup data structure to traverse html as if it were a json data type.
         page_soup = BeautifulSoup(page_results.content, "html.parser")
@@ -75,46 +76,93 @@ def page_scrapper(page_url):
 
 # scrape individual questions
 def question_scrapper(question_url: str):
+    if 'note-bank' in question_url:
+        print("skipping note-bank.")
+        return None
     # get data from question url and parse it into html using soup
     question_html = requests.get(question_url)
     question_soup = BeautifulSoup(question_html.content, 'html.parser')
+    print(f"processing question: {question_url}")
+
+    question_title = ''
+    body = ''
+    attachments = []
+    attachment_file = ''
+    attachment_content = ''
+    category = ''
+    tags = []
+
+    # Get content from any attachments
+    try:
+        # returns the number of attached files
+        attached_files_number=question_soup.find('div', class_="css-503bni").text.strip()[-2]
+        attached_filenames_container = question_soup.find_all('li', class_="css-1ap3j0h")
+        # find out whether specific filenames exist
+        for attached_file in attached_filenames_container:
+            attachments.append(attached_file.text)
+            # get the content for this file
+            attachment_content_containers = question_soup.find('div', class_="css-xss17j").findChildren(recursive=False)[1:]
+
+            for attachment_filename, attachment_content_div in attachment_content_containers:
+                if 'nstruction' in attachment_filename.text or 'ssignment' in attachment_filename.text or 'eek' in attachment_filename.text or 'wk' in attachment_filename.text or 'odule' in attachment_filename.text or 'ideline' in attachment_filename.text or 'inal' in attachment_filename.text or 'aper' in attachment_filename.text:
+                    attachment_file = attachment_filename.text
+                    attachment_content = attachment_content_div.text.strip()
+
+        attachment_links = question_soup.find_all('li', class_="css-1960nst")
+
+        for attachment_link in attachment_links:
+            attachments.append(attachment_link.text)
+
+    except AttributeError:
+        attachment_content = ''
+
 
     # get title for each question
     try:
         question_title = question_soup.find('h1').text
+
+        if 'response for' in question_title:
+            return None
+
     except AttributeError:
-        question_title = "Gateway Assignment - Custom writing services by experts"
+        question_title = "Custom Solution - Writing Help by experts"
 
     # Get question text/description
     try:
         body = question_soup.find('div', class_="css-1lys3v9").text
 
         # ensure each question has more than x words of content
-        if len(body) - int(len(body.replace(" ", ""))) + 1 < 40:
+        if (len(body) - int(len(body.replace(" ", ""))) + 1 < 40) and len(attachment_content.replace(" ", "")) < 10:
             return None
     except AttributeError:
         return None
+
     # get question category/discipline
     try:
         categories = question_soup.find_all('a', class_="css-1al3bwk")
-        category = categories[1].text.replace('>', '').replace(' homework help', '')
-        field = categories[-1].text.replace('>', '').replace(' homework help', '')
+        category = categories[-1].text.replace('>', '').replace(' homework help', '').strip()
     except AttributeError:
         category = "Others"
-        field = "Others"
 
     # get question tags or subcategory
     try:
-        tags = []
         tagy = question_soup.find_all('a', class_="css-1xtj9tu")
         for tag in tagy:
-            tags.append(tag.text)
+            tags.append(tag.text.capitalize())
+        if len(tags) == 0:
+            tags = ['Solution']
     except AttributeError:
-        tags = "Original Solutions"
+        tags = "Solutions"
+
+    if len(question_title.replace(' ', '')) < 25:
+        question_title = f"{question_title}: " + body[0:30].replace('\n', ' ') + f" | {category}"
 
     # get question data i.e. title, body, category, field, and 1 or more tags
-    question_data = [question_title, body, category, field]
-    question_data += tags
+    attachments_to_string = '|'.join(attachments)
+    tags_to_string = '|'.join(tags)
+    question_data = [question_title, body, attachments_to_string, attachment_file, attachment_content, category, tags_to_string, question_url]
+
+    print(f"{len(question_data)} columns in question.")
 
     return question_data
 
@@ -173,3 +221,7 @@ if __name__ == "__main__":
     # scrape as long as there are links in the links.json
     while len(links) > 0:
         scrape(links)
+
+    print("\nQuestions saved in format:"
+          "\n'['title', 'body', 'attachments', 'attachment_file', "
+          "'attachment_content', 'category', 'tags', 'question_url']'")

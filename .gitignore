@@ -1,4 +1,9 @@
 /venv/
 /.idea/
 /raw/*
-
+/processed/*
+/raw
+/data
+/data/*
+/processed
+/links/*

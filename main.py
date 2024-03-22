@@ -24,7 +24,7 @@ def consume_api(api_url: str, data: list):
 
 # read questions from csv and format them to be consumed by API
 def read_from_csv(csv_file_name: str = 'h_market_latest.csv'):
-    with open(f"raw/{csv_file_name}", 'r', encoding='utf-8', newline='') as q_file:
+    with open(f"raw/{csv_file_name}", 'r', encoding='utf-8', newline='', errors='ignore') as q_file:
         # use csv reader function to read from csv file
         questions_data = []
         dataset = reader(q_file)
@@ -35,8 +35,8 @@ def read_from_csv(csv_file_name: str = 'h_market_latest.csv'):
 
         for row in dataset:
             original_title = row[0].strip()
-            tag = row[3] or row[4].strip()
-            category = row[2].strip()
+            tag = row[3].strip() or row[4].strip()
+            category = row[3].strip()
 
             # check if title is in the title_counts
             if original_title in title_counts:
@@ -131,7 +131,7 @@ def process_batch(url: str, data: list, batch_size: int):
 
 
 if __name__ == "__main__":
-    url = 'https://writeessayscheap.org/api/json-ep'
+    url = 'https://paperstudy.org/api/json-ep'
     # read all data from the json file
     json_data = read_from_json()
 
