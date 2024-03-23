@@ -82,7 +82,7 @@ def question_scrapper(question_url: str):
     # get data from question url and parse it into html using soup
     question_html = requests.get(question_url)
     question_soup = BeautifulSoup(question_html.content, 'html.parser')
-    print(f"processing question: {question_url}")
+    print(f"\nProcessing question: {question_url}")
 
     question_title = ''
     body = ''
@@ -94,34 +94,44 @@ def question_scrapper(question_url: str):
 
     # Get content from any attachments
     try:
+        def get_first_file(attachment_content_containers):
+            attachment_filename, attachment_content_div = attachment_content_containers[0]
+            attachment_content = attachment_content_div.text.strip()
+            attachment_file = attachment_filename.text.strip()
+            return attachment_file, attachment_content
         # returns the number of attached files
-        attached_files_number=question_soup.find('div', class_="css-503bni").text.strip()[-2]
+        attached_files_number = question_soup.find('div', class_="css-503bni").text.strip()[-2]
         attached_filenames_container = question_soup.find_all('li', class_="css-1ap3j0h")
         # find out whether specific filenames exist
         for attached_file in attached_filenames_container:
+            print(f"Found {attached_files_number} file attachments.")
             attachments.append(attached_file.text)
             # get the content for this file
             attachment_content_containers = question_soup.find('div', class_="css-xss17j").findChildren(recursive=False)[1:]
 
             for attachment_filename, attachment_content_div in attachment_content_containers:
                 if 'nstruction' in attachment_filename.text or 'ssignment' in attachment_filename.text or 'eek' in attachment_filename.text or 'wk' in attachment_filename.text or 'odule' in attachment_filename.text or 'ideline' in attachment_filename.text or 'inal' in attachment_filename.text or 'aper' in attachment_filename.text:
+                    print(f"Scrapped {attachment_filename.text} attachment.")
                     attachment_file = attachment_filename.text
                     attachment_content = attachment_content_div.text.strip()
+                else:
+                    attachment_file, attachment_content = get_first_file(attachment_content_containers)
 
         attachment_links = question_soup.find_all('li', class_="css-1960nst")
 
         for attachment_link in attachment_links:
+            print(f"Found {len(attachment_links)} links for attachments.")
             attachments.append(attachment_link.text)
 
     except AttributeError:
         attachment_content = ''
 
-
     # get title for each question
     try:
         question_title = question_soup.find('h1').text
 
-        if 'response for' in question_title:
+        if 'esponse for' in question_title or 'respond' in question_title:
+            print("It's a response. Skipping...")
             return None
 
     except AttributeError:
@@ -132,10 +142,10 @@ def question_scrapper(question_url: str):
         body = question_soup.find('div', class_="css-1lys3v9").text
 
         # ensure each question has more than x words of content
-        if (len(body) - int(len(body.replace(" ", ""))) + 1 < 40) and len(attachment_content.replace(" ", "")) < 10:
+        if ((len(body) - int(len(body.replace(" ", ""))) + 1) + len(attachment_content.replace(" ", ""))) < 40:
             return None
     except AttributeError:
-        return None
+        body = attachment_content
 
     # get question category/discipline
     try:
@@ -152,17 +162,17 @@ def question_scrapper(question_url: str):
         if len(tags) == 0:
             tags = ['Solution']
     except AttributeError:
-        tags = "Solutions"
+        tags = ["Solutions"]
 
     if len(question_title.replace(' ', '')) < 25:
-        question_title = f"{question_title}: " + body[0:30].replace('\n', ' ') + f" | {category}"
+        question_title = f"{question_title}: " + body[0:40].replace('\n', ' ') + f" | {category}"
 
     # get question data i.e. title, body, category, field, and 1 or more tags
     attachments_to_string = '|'.join(attachments)
     tags_to_string = '|'.join(tags)
     question_data = [question_title, body, attachments_to_string, attachment_file, attachment_content, category, tags_to_string, question_url]
 
-    print(f"{len(question_data)} columns in question.")
+    print(f"{len(body)} => body and {len(attachment_content)} attachment_content in question.")
 
     return question_data
 
@@ -175,7 +185,7 @@ def save_question_to_csv(question_data):
         print("Saving question to file...")
         # write question data to csv as a row
         the_writer.writerow(question_data)
-    return print("Saved to file...")
+    return print("Saved to file...\n")
 
 
 # on startup
