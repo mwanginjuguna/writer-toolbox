@@ -7,3 +7,6 @@
 /data/*
 /processed
 /links/*
+*.csv
+/raw
+/raw/*.csv
