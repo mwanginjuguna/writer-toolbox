@@ -9,4 +9,9 @@
 /links/*
 *.csv
 /raw
+raw
+links
+data
 /raw/*.csv
+.csv
+

@@ -101,21 +101,22 @@ def question_scrapper(question_url: str):
             return attachment_file, attachment_content
         # returns the number of attached files
         attached_files_number = question_soup.find('div', class_="css-503bni").text.strip()[-2]
-        attached_filenames_container = question_soup.find_all('li', class_="css-1ap3j0h")
+        attached_filenames_container = question_soup.find_all('li', class_="css-1ap3j0h") # tabs with filenames - each tab is a li el with the filename
         # find out whether specific filenames exist
+        print(f"Found {attached_files_number} file attachments.")
         for attached_file in attached_filenames_container:
-            print(f"Found {attached_files_number} file attachments.")
             attachments.append(attached_file.text)
-            # get the content for this file
-            attachment_content_containers = question_soup.find('div', class_="css-xss17j").findChildren(recursive=False)[1:]
 
-            for attachment_filename, attachment_content_div in attachment_content_containers:
-                if 'nstruction' in attachment_filename.text or 'ssignment' in attachment_filename.text or 'eek' in attachment_filename.text or 'wk' in attachment_filename.text or 'odule' in attachment_filename.text or 'ideline' in attachment_filename.text or 'inal' in attachment_filename.text or 'aper' in attachment_filename.text:
-                    print(f"Scrapped {attachment_filename.text} attachment.")
-                    attachment_file = attachment_filename.text
-                    attachment_content = attachment_content_div.text.strip()
-                else:
-                    attachment_file, attachment_content = get_first_file(attachment_content_containers)
+        # get the content for this file
+        attachment_content_containers = question_soup.find('div', class_="css-xss17j").findChildren(recursive=False)[1:] # file contents divs skipping filename div
+
+        attachment_content = 'Important from Attached Files\n'
+        attachment_files = []
+        attachment_file = '#'
+        for attachment_filename, attachment_content_div in attachment_content_containers:
+            attachment_file = attachment_file + '|' + attachment_filename.text.strip()
+            attachment_files.append(attachment_file)
+            attachment_content = attachment_content + '\n' + attachment_file + '\n' + attachment_content_div.text.strip()
 
         attachment_links = question_soup.find_all('li', class_="css-1960nst")
 
