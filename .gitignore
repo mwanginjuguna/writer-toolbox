@@ -1,17 +1,13 @@
 /venv/
 /.idea/
-/raw/*
-/processed/*
-/raw
-/data
-/data/*
 /processed
-/links/*
 *.csv
 /raw
-raw
-links
-data
+/links
+/data
+/raw
+*.csv
 /raw/*.csv
-.csv
+/__pycache__
+*.pyc
 
